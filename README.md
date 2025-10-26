@@ -209,3 +209,4 @@ Aplikasi menggunakan Tailwind CSS. Untuk styling tambahan, edit file `src/app/gl
 ## License
 
 MIT License
+# lern-mysql-with-next-js
