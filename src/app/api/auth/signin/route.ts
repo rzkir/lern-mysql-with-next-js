@@ -1,25 +1,45 @@
 import { NextRequest, NextResponse } from "next/server";
+
 import pool from "@/utils/lib/database";
+
 import bcrypt from "bcrypt";
+
 import jwt from "jsonwebtoken";
+
+import { z } from "zod";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
+const SigninSchema = z.object({
+  emailOrName: z.string().min(1, "Email atau nama harus diisi"),
+  password: z.string().min(6, "Password minimal 6 karakter"),
+});
+
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { email, password } = body as { email?: string; password?: string };
-
-    if (!email || !password) {
+    const json = await request.json();
+    const parsed = SigninSchema.safeParse(json);
+    if (!parsed.success) {
+      type ValidationIssue = { path: (string | number)[]; message: string };
       return NextResponse.json(
-        { success: false, error: "Email and password are required" },
+        {
+          success: false,
+          error: "Validasi gagal",
+          issues: (parsed.error.issues as unknown as ValidationIssue[]).map(
+            (i) => ({
+              path: i.path.join("."),
+              message: i.message,
+            })
+          ),
+        },
         { status: 400 }
       );
     }
+    const { emailOrName, password } = parsed.data;
 
     const [rows] = await pool.execute(
-      "SELECT id, name, email, password_hash FROM users WHERE email = ?",
-      [email]
+      "SELECT id, name, email, password_hash FROM users WHERE email = ? OR name = ?",
+      [emailOrName, emailOrName]
     );
 
     const users = rows as Array<{
@@ -30,7 +50,7 @@ export async function POST(request: NextRequest) {
     }>;
     if (!users.length) {
       return NextResponse.json(
-        { success: false, error: "Invalid email or password" },
+        { success: false, error: "Email/nama atau password tidak valid" },
         { status: 401 }
       );
     }
@@ -39,7 +59,7 @@ export async function POST(request: NextRequest) {
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) {
       return NextResponse.json(
-        { success: false, error: "Invalid email or password" },
+        { success: false, error: "Email/nama atau password tidak valid" },
         { status: 401 }
       );
     }

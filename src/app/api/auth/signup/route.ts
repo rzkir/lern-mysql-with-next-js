@@ -6,26 +6,37 @@ import bcrypt from "bcrypt";
 
 import jwt from "jsonwebtoken";
 
+import { z } from "zod";
+
 const JWT_SECRET = process.env.JWT_SECRET;
+
+const SignupSchema = z.object({
+  name: z.string().min(2, "Name minimal 2 karakter"),
+  email: z.string().email("Email tidak valid"),
+  password: z.string().min(6, "Password minimal 6 karakter"),
+});
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { name, email, password } = body as {
-      name?: string;
-      email?: string;
-      password?: string;
-    };
-
-    if (!name || !email || !password) {
+    const json = await request.json();
+    const parsed = SignupSchema.safeParse(json);
+    if (!parsed.success) {
+      type ValidationIssue = { path: (string | number)[]; message: string };
       return NextResponse.json(
         {
           success: false,
-          error: "Name, email, and password_hash are required",
+          error: "Validasi gagal",
+          issues: (parsed.error.issues as unknown as ValidationIssue[]).map(
+            (i) => ({
+              path: i.path.join("."),
+              message: i.message,
+            })
+          ),
         },
         { status: 400 }
       );
     }
+    const { name, email, password } = parsed.data;
 
     // Check existing user
     const [existing] = await pool.execute(
