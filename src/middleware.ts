@@ -1,40 +1,65 @@
 import { NextResponse } from "next/server";
+
 import type { NextRequest } from "next/server";
-import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET;
+import { jwtVerify } from "jose";
 
-export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+// jose only supports Uint8Array for the secret
+const secret = process.env.JWT_SECRET;
+const encoder = new TextEncoder();
 
-  // Allow auth pages and public assets
-  if (
-    pathname.startsWith("/_next") ||
-    pathname.startsWith("/api/auth") ||
-    pathname.startsWith("/public") ||
-    pathname.startsWith("/favicon") ||
-    pathname.startsWith("/favicon.ico") ||
-    pathname.startsWith("/signin") ||
-    pathname.startsWith("/signup")
-  ) {
-    return NextResponse.next();
-  }
-
-  const token = request.cookies.get("token")?.value;
-  if (!token) {
-    const url = new URL("/signin", request.url);
-    return NextResponse.redirect(url);
-  }
-
+async function getUserRoleFromToken(
+  token?: string
+): Promise<"admin" | "user" | null> {
+  if (!token || !secret) return null;
   try {
-    jwt.verify(token, JWT_SECRET);
-    return NextResponse.next();
+    const { payload } = await jwtVerify(token, encoder.encode(secret));
+    const role = payload.role;
+    if (role === "admin" || role === "user") {
+      return role;
+    }
+    return null;
   } catch {
-    const url = new URL("/signin", request.url);
-    return NextResponse.redirect(url);
+    return null;
   }
 }
 
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  const token = request.cookies.get("token")?.value;
+  const role = await getUserRoleFromToken(token);
+
+  // Protect /dashboard for admins only
+  if (pathname.startsWith("/dashboard")) {
+    if (!role) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/signin";
+      return NextResponse.redirect(url);
+    }
+    if (role !== "admin") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/";
+      return NextResponse.redirect(url);
+    }
+    return NextResponse.next();
+  }
+
+  // Jika user sudah login arahkan ke route sesuai role
+  if (pathname === "/" || pathname === "/signin") {
+    if (role === "admin") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/dashboard";
+      return NextResponse.redirect(url);
+    }
+    if (role === "user" && pathname === "/signin") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/";
+      return NextResponse.redirect(url);
+    }
+  }
+  return NextResponse.next();
+}
+
 export const config = {
-  matcher: ["/((?!api/auth|_next|favicon.ico|public).*)"],
+  matcher: ["/", "/signin", "/dashboard/:path*"],
 };

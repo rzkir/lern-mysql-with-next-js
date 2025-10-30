@@ -1,7 +1,15 @@
+'use client'
+
 import React from 'react'
 
-export default function page() {
+import { useAuth } from '@/utils/context/AuthContext'
+
+export default function Page() {
+  const { user } = useAuth();
+  console.log(user);
   return (
-    <div>page</div>
-  )
+    <div>
+      <h1>Welcome {user?.name} {user?.role}</h1>
+    </div>
+  );
 }

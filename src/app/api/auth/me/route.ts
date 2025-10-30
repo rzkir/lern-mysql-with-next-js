@@ -23,11 +23,16 @@ export async function GET(request: NextRequest) {
     };
 
     const [rows] = await pool.execute(
-      "SELECT id, name, email FROM users WHERE id = ?",
+      "SELECT id, name, email, role FROM users WHERE id = ?",
       [decoded.sub]
     );
 
-    const users = rows as Array<{ id: number; name: string; email: string }>;
+    const users = rows as Array<{
+      id: number;
+      name: string;
+      email: string;
+      role: "admin" | "user";
+    }>;
     if (!users.length) {
       return NextResponse.json(
         { success: false, error: "User not found" },

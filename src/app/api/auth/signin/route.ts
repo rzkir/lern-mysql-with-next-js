@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     const { emailOrName, password } = parsed.data;
 
     const [rows] = await pool.execute(
-      "SELECT id, name, email, password_hash FROM users WHERE email = ? OR name = ?",
+      "SELECT id, name, email, password_hash, role FROM users WHERE email = ? OR name = ?",
       [emailOrName, emailOrName]
     );
 
@@ -47,6 +47,7 @@ export async function POST(request: NextRequest) {
       name: string;
       email: string;
       password_hash: string;
+      role: "admin" | "user";
     }>;
     if (!users.length) {
       return NextResponse.json(
@@ -65,7 +66,7 @@ export async function POST(request: NextRequest) {
     }
 
     const token = jwt.sign(
-      { sub: user.id, email: user.email, name: user.name },
+      { sub: user.id, email: user.email, name: user.name, role: user.role },
       JWT_SECRET,
       {
         expiresIn: "7d",
@@ -74,7 +75,12 @@ export async function POST(request: NextRequest) {
 
     const res = NextResponse.json({
       success: true,
-      data: { id: user.id, name: user.name, email: user.email },
+      data: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
     });
     res.cookies.set("token", token, {
       httpOnly: true,

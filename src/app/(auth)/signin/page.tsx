@@ -1,8 +1,11 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+
 import Link from 'next/link';
+
 import { useRouter } from 'next/navigation';
+
 import { Mail, Lock, Eye, EyeOff, Quote } from 'lucide-react';
 
 import { useAuth } from '@/utils/context/AuthContext';
@@ -18,13 +21,23 @@ export default function SigninPage() {
         setSigninEmailOrName,
         setSigninPassword,
         handleSigninSubmit,
+        user,
     } = useAuth();
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        const success = await handleSigninSubmit(e);
-        if (success) {
-            router.push("/");
+    useEffect(() => {
+        // Jika sudah login, redirect sesuai role
+        if (user) {
+            if (user.role === 'admin') {
+                router.push('/dashboard');
+            } else {
+                router.push('/');
+            }
         }
+    }, [user, router]);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        await handleSigninSubmit(e);
+        // Tidak perlu handle redirect di sini
     };
 
     return (

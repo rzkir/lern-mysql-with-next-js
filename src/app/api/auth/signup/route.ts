@@ -60,13 +60,20 @@ export async function POST(request: NextRequest) {
 
     const insertedId = (insertResult as { insertId: number }).insertId;
 
-    const token = jwt.sign({ sub: insertedId, email, name }, JWT_SECRET, {
+    // dapatkan role user setelah insert
+    const [rows] = await pool.execute("SELECT role FROM users WHERE id = ?", [
+      insertedId,
+    ]);
+    const usersWithRole = rows as Array<{ role: string }>;
+    const role = usersWithRole.length > 0 ? usersWithRole[0].role : "user";
+
+    const token = jwt.sign({ sub: insertedId, email, name, role }, JWT_SECRET, {
       expiresIn: "7d",
     });
 
     const res = NextResponse.json({
       success: true,
-      data: { id: insertedId, name, email },
+      data: { id: insertedId, name, email, role },
     });
     res.cookies.set("token", token, {
       httpOnly: true,

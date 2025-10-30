@@ -1,6 +1,3 @@
--- Gunakan database yang sudah ada
-USE if0_40194964_ecommerce;
-
 -- Buat tabel users untuk autentikasi
 CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
