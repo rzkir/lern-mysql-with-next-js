@@ -4,18 +4,17 @@ import type { NextRequest } from "next/server";
 
 import { jwtVerify } from "jose";
 
-// jose only supports Uint8Array for the secret
 const secret = process.env.JWT_SECRET;
 const encoder = new TextEncoder();
 
 async function getUserRoleFromToken(
   token?: string
-): Promise<"admin" | "user" | null> {
+): Promise<"admin" | "user" | "pemilik" | null> {
   if (!token || !secret) return null;
   try {
     const { payload } = await jwtVerify(token, encoder.encode(secret));
     const role = payload.role;
-    if (role === "admin" || role === "user") {
+    if (role === "admin" || role === "user" || role === "pemilik") {
       return role;
     }
     return null;
@@ -29,28 +28,24 @@ export async function middleware(request: NextRequest) {
   const token = request.cookies.get("token")?.value;
   const role = await getUserRoleFromToken(token);
 
-  // Protect /dashboard for admins only
   if (pathname.startsWith("/dashboard")) {
-    if (!role) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/signin";
-      return NextResponse.redirect(url);
-    }
-    if (role !== "admin") {
+    // Cek role bukan pemilik, bukan admin: redirect ke /
+    if (role === "user" || !role) {
       const url = request.nextUrl.clone();
       url.pathname = "/";
       return NextResponse.redirect(url);
     }
+    // admin & pemilik bisa akses
     return NextResponse.next();
   }
-
-  // Jika user sudah login arahkan ke route sesuai role
-  if (pathname === "/" || pathname === "/signin") {
-    if (role === "admin") {
+  // Redirect setelah login
+  if ((pathname === "/" || pathname === "/signin") && role) {
+    if (role === "admin" || role === "pemilik") {
       const url = request.nextUrl.clone();
       url.pathname = "/dashboard";
       return NextResponse.redirect(url);
     }
+    // user: hanya dari /signin saja diarahkan ke /
     if (role === "user" && pathname === "/signin") {
       const url = request.nextUrl.clone();
       url.pathname = "/";

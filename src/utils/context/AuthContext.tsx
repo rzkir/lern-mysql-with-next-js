@@ -17,6 +17,7 @@ const SignupSchema = z.object({
     name: z.string().min(2, 'Nama minimal 2 karakter'),
     email: z.string().email('Email tidak valid'),
     password: z.string().min(6, 'Password minimal 6 karakter'),
+    role: z.enum(["user", "pemilik"]).optional().default("user"),
 });
 
 interface AuthContextType {
@@ -36,13 +37,15 @@ interface AuthContextType {
     signupPassword: string;
     signupFieldErrors: { name?: string; email?: string; password?: string };
     signupLoading: boolean;
+    signupRole: string;
+    setSignupRole: (value: string) => void;
     setSignupName: (value: string) => void;
     setSignupEmail: (value: string) => void;
     setSignupPassword: (value: string) => void;
     handleSignupSubmit: (e?: React.FormEvent) => Promise<boolean>;
     // Auth methods
     signin: (emailOrName: string, password: string) => Promise<void>;
-    signup: (name: string, email: string, password: string) => Promise<void>;
+    signup: (name: string, email: string, password: string, role: string) => Promise<void>;
     signout: () => Promise<void>;
 }
 
@@ -64,6 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [signupPassword, setSignupPassword] = useState("");
     const [signupFieldErrors, setSignupFieldErrors] = useState<{ name?: string; email?: string; password?: string }>({});
     const [signupLoading, setSignupLoading] = useState(false);
+    const [signupRole, setSignupRole] = useState("user");
 
     useEffect(() => {
         checkAuth();
@@ -98,11 +102,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(data.data);
     };
 
-    const signup = async (name: string, email: string, password: string) => {
+    const signup = async (name: string, email: string, password: string, role: string) => {
         const res = await fetch('/api/auth/signup', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, email, password }),
+            body: JSON.stringify({ name, email, password, role }),
         });
         const data = await res.json();
         if (!res.ok || !data.success) {
@@ -157,7 +161,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSignupFieldErrors({});
         setSignupLoading(true);
         try {
-            const parsed = SignupSchema.safeParse({ name: signupName, email: signupEmail, password: signupPassword });
+            const parsed = SignupSchema.safeParse({ name: signupName, email: signupEmail, password: signupPassword, role: signupRole });
             if (!parsed.success) {
                 const errs: { name?: string; email?: string; password?: string } = {};
                 for (const issue of parsed.error.issues) {
@@ -168,7 +172,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 toast.error("Mohon perbaiki kesalahan pada form");
                 return false;
             }
-            await signup(parsed.data.name, parsed.data.email, parsed.data.password);
+            await signup(parsed.data.name, parsed.data.email, parsed.data.password, parsed.data.role);
             toast.success("Registrasi berhasil");
             // Reset form on success
             setSignupName("");
@@ -201,6 +205,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             signupPassword,
             signupFieldErrors,
             signupLoading,
+            signupRole,
+            setSignupRole,
             setSignupName,
             setSignupEmail,
             setSignupPassword,

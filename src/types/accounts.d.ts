@@ -3,7 +3,9 @@ export interface Account {
   name: string;
   email: string;
   password: string;
-  role: "admin" | "user";
+  role: "admin" | "user" | "pemilik";
+  status: boolean;
+  is_verified: boolean;
   created_at?: string;
   updated_at?: string;
 }

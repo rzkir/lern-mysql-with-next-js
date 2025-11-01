@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
       id: number;
       name: string;
       email: string;
-      role: "admin" | "user";
+      role: "admin" | "user" | "pemilik";
     }>;
     if (!users.length) {
       return NextResponse.json(

@@ -6,14 +6,9 @@ import bcrypt from "bcrypt";
 
 import jwt from "jsonwebtoken";
 
-import { z } from "zod";
+import { SigninSchema } from "@/lib/validations";
 
 const JWT_SECRET = process.env.JWT_SECRET;
-
-const SigninSchema = z.object({
-  emailOrName: z.string().min(1, "Email atau nama harus diisi"),
-  password: z.string().min(6, "Password minimal 6 karakter"),
-});
 
 export async function POST(request: NextRequest) {
   try {
@@ -47,7 +42,7 @@ export async function POST(request: NextRequest) {
       name: string;
       email: string;
       password_hash: string;
-      role: "admin" | "user";
+      role: "admin" | "user" | "pemilik";
     }>;
     if (!users.length) {
       return NextResponse.json(

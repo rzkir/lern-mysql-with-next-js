@@ -1,4 +1,5 @@
-import { AppSidebar } from "@/components/app-sidebar"
+'use client'
+import { useEffect, useState } from "react"
 
 import { ChartAreaInteractive } from "@/components/chart-area-interactive"
 
@@ -6,40 +7,50 @@ import { DataTable } from "@/components/data-table"
 
 import { SectionCards } from "@/components/section-cards"
 
-import { SiteHeader } from "@/components/site-header"
+import { useAuth } from "@/utils/context/AuthContext"
 
-import {
-  SidebarInset,
-  SidebarProvider,
-} from "@/components/ui/sidebar"
+import { Skeleton } from "@/components/ui/skeleton"
 
-import data from "./data.json"
+import allData from "./data.json"
+
+function AdminDashboard() {
+    return (
+        <>
+            <SectionCards />
+            <div className="px-4 lg:px-6">
+                <ChartAreaInteractive />
+            </div>
+            <DataTable data={allData} />
+        </>
+    )
+}
+
+function PemilikDashboard({ name }: { name: string }) {
+    const filtered = allData.filter(row => row.reviewer === name);
+    return (
+        <>
+            <SectionCards />
+            <div className="px-4 lg:px-6">
+                <ChartAreaInteractive />
+            </div>
+            <DataTable data={filtered} />
+        </>
+    )
+}
 
 export default function Page() {
-  return (
-    <SidebarProvider
-      style={
-        {
-          "--sidebar-width": "calc(var(--spacing) * 72)",
-          "--header-height": "calc(var(--spacing) * 12)",
-        } as React.CSSProperties
-      }
-    >
-      <AppSidebar variant="inset" />
-      <SidebarInset>
-        <SiteHeader />
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-2">
-            <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-              <SectionCards />
-              <div className="px-4 lg:px-6">
-                <ChartAreaInteractive />
-              </div>
-              <DataTable data={data} />
-            </div>
-          </div>
-        </div>
-      </SidebarInset>
-    </SidebarProvider>
-  )
+    const { user } = useAuth();
+    const [role, setRole] = useState<string | null>(null);
+    const [name, setName] = useState<string>("");
+    useEffect(() => {
+        if (user) { setRole(user.role); setName(user.name); }
+    }, [user]);
+
+    if (role === "admin") {
+        return <AdminDashboard />;
+    } else if (role === "pemilik" && name) {
+        return <PemilikDashboard name={name} />;
+    } else {
+        return <Skeleton className="w-full h-full" />;
+    }
 }
