@@ -35,7 +35,7 @@ export async function POST(request: Request) {
       );
     }
     const body = await request.json();
-    const { name, email, password, role } = body;
+    const { name, email, phone, password, role } = body;
     if (!name || !email || !password) {
       return NextResponse.json(
         { success: false, error: "Name, email, and password are required" },
@@ -56,8 +56,8 @@ export async function POST(request: Request) {
     }
     const password_hash = await bcrypt.hash(password, 10);
     const [result] = (await pool.query(
-      "INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, ?)",
-      [name, email, password_hash, role || "user"]
+      "INSERT INTO users (name, email, phone, password_hash, role) VALUES (?, ?, ?, ?, ?)",
+      [name, email, phone || null, password_hash, role || "user"]
     )) as [ResultSetHeader, unknown];
     if (result.insertId === 0) {
       return NextResponse.json(
@@ -119,7 +119,7 @@ export async function PATCH(request: Request) {
       );
     }
     const body = await request.json();
-    const { id, name, email, role } = body;
+    const { id, name, email, phone, role } = body;
     if (!id) {
       return NextResponse.json(
         { success: false, error: "ID is required" },
@@ -127,8 +127,8 @@ export async function PATCH(request: Request) {
       );
     }
     const [result] = (await pool.query(
-      "UPDATE users SET name = ?, email = ?, role = ? WHERE id = ?",
-      [name, email, role, id]
+      "UPDATE users SET name = ?, email = ?, phone = ?, role = ? WHERE id = ?",
+      [name, email, phone || null, role, id]
     )) as [ResultSetHeader, unknown];
     if (result.affectedRows === 0) {
       return NextResponse.json(

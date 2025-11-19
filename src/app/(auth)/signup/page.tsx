@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Mail, Lock, Eye, EyeOff, User, Quote } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, User, Quote, Phone } from 'lucide-react';
 
 import { useAuth } from '@/utils/context/AuthContext';
 
@@ -16,12 +16,16 @@ export default function SignupPage() {
         signupName,
         signupEmail,
         signupPassword,
+        signupConfirmPassword,
+        signupPhone,
         signupFieldErrors,
         signupLoading,
         setSignupRole,
         setSignupName,
         setSignupEmail,
         setSignupPassword,
+        setSignupConfirmPassword,
+        setSignupPhone,
         handleSignupSubmit,
     } = useAuth();
 
@@ -101,6 +105,40 @@ export default function SignupPage() {
                                     <p className="mt-1 text-xs text-red-600">{signupFieldErrors.name}</p>
                                 )}
                             </div>
+                            {/* Confirm Password Input */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-900 mb-2">
+                                    Confirm Password
+                                </label>
+                                <div className="relative">
+                                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                                    <input
+                                        type={showPassword ? "text" : "password"}
+                                        value={signupConfirmPassword}
+                                        onChange={(e) => setSignupConfirmPassword(e.target.value)}
+                                        required
+                                        placeholder="Re-enter your password"
+                                        className={`w-full pl-11 pr-12 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-600 ${signupFieldErrors.confirmPassword
+                                            ? 'border-red-500'
+                                            : 'border-gray-300'
+                                            }`}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                    >
+                                        {showPassword ? (
+                                            <EyeOff className="w-5 h-5" />
+                                        ) : (
+                                            <Eye className="w-5 h-5" />
+                                        )}
+                                    </button>
+                                </div>
+                                {signupFieldErrors.confirmPassword && (
+                                    <p className="mt-1 text-xs text-red-600">{signupFieldErrors.confirmPassword}</p>
+                                )}
+                            </div>
                             {/* Email Input */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-900 mb-2">
@@ -122,6 +160,29 @@ export default function SignupPage() {
                                 </div>
                                 {signupFieldErrors.email && (
                                     <p className="mt-1 text-xs text-red-600">{signupFieldErrors.email}</p>
+                                )}
+                            </div>
+                            {/* Phone Input */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-900 mb-2">
+                                    Phone
+                                </label>
+                                <div className="relative">
+                                    <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                                    <input
+                                        type="tel"
+                                        value={signupPhone}
+                                        onChange={(e) => setSignupPhone(e.target.value)}
+                                        required
+                                        placeholder="Enter your phone number"
+                                        className={`w-full pl-11 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-600 ${signupFieldErrors.phone
+                                            ? 'border-red-500'
+                                            : 'border-gray-300'
+                                            }`}
+                                    />
+                                </div>
+                                {signupFieldErrors.phone && (
+                                    <p className="mt-1 text-xs text-red-600">{signupFieldErrors.phone}</p>
                                 )}
                             </div>
                             {/* Password Input */}

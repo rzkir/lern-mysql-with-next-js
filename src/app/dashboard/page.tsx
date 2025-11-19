@@ -1,4 +1,5 @@
 'use client'
+
 import { useEffect, useState } from "react"
 
 import { ChartAreaInteractive } from "@/components/chart-area-interactive"

@@ -13,11 +13,24 @@ const SigninSchema = z.object({
     password: z.string().min(6, 'Password minimal 6 karakter'),
 });
 
-const SignupSchema = z.object({
+const SignupSchemaBase = z.object({
     name: z.string().min(2, 'Nama minimal 2 karakter'),
     email: z.string().email('Email tidak valid'),
+    phone: z
+        .string()
+        .min(8, 'Nomor telepon minimal 8 digit')
+        .max(20, 'Nomor telepon maksimal 20 digit')
+        .regex(/^\+?\d[\d\s-]{6,}$/i, 'Nomor telepon tidak valid'),
     password: z.string().min(6, 'Password minimal 6 karakter'),
+    confirmPassword: z.string().min(6, 'Konfirmasi password minimal 6 karakter'),
     role: z.enum(["user", "pemilik"]).optional().default("user"),
+});
+
+type SignupForm = { password: string; confirmPassword: string };
+
+const SignupSchema = SignupSchemaBase.refine((data: SignupForm) => data.password === data.confirmPassword, {
+    path: ['confirmPassword'],
+    message: 'Konfirmasi password tidak cocok',
 });
 
 interface AuthContextType {
@@ -35,17 +48,21 @@ interface AuthContextType {
     signupName: string;
     signupEmail: string;
     signupPassword: string;
-    signupFieldErrors: { name?: string; email?: string; password?: string };
+    signupConfirmPassword: string;
+    signupPhone: string;
+    signupFieldErrors: { name?: string; email?: string; phone?: string; password?: string; confirmPassword?: string };
     signupLoading: boolean;
     signupRole: string;
     setSignupRole: (value: string) => void;
     setSignupName: (value: string) => void;
     setSignupEmail: (value: string) => void;
     setSignupPassword: (value: string) => void;
+    setSignupConfirmPassword: (value: string) => void;
+    setSignupPhone: (value: string) => void;
     handleSignupSubmit: (e?: React.FormEvent) => Promise<boolean>;
     // Auth methods
     signin: (emailOrName: string, password: string) => Promise<void>;
-    signup: (name: string, email: string, password: string, role: string) => Promise<void>;
+    signup: (name: string, email: string, phone: string, password: string, role: string) => Promise<void>;
     signout: () => Promise<void>;
 }
 
@@ -65,7 +82,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [signupName, setSignupName] = useState("");
     const [signupEmail, setSignupEmail] = useState("");
     const [signupPassword, setSignupPassword] = useState("");
-    const [signupFieldErrors, setSignupFieldErrors] = useState<{ name?: string; email?: string; password?: string }>({});
+    const [signupConfirmPassword, setSignupConfirmPassword] = useState("");
+    const [signupPhone, setSignupPhone] = useState("");
+    const [signupFieldErrors, setSignupFieldErrors] = useState<{ name?: string; email?: string; phone?: string; password?: string; confirmPassword?: string }>({});
     const [signupLoading, setSignupLoading] = useState(false);
     const [signupRole, setSignupRole] = useState("user");
 
@@ -102,11 +121,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(data.data);
     };
 
-    const signup = async (name: string, email: string, password: string, role: string) => {
+    const signup = async (name: string, email: string, phone: string, password: string, role: string) => {
         const res = await fetch('/api/auth/signup', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, email, password, role }),
+            body: JSON.stringify({ name, email, phone, password, role }),
         });
         const data = await res.json();
         if (!res.ok || !data.success) {
@@ -161,23 +180,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSignupFieldErrors({});
         setSignupLoading(true);
         try {
-            const parsed = SignupSchema.safeParse({ name: signupName, email: signupEmail, password: signupPassword, role: signupRole });
+            const parsed = SignupSchema.safeParse({ name: signupName, email: signupEmail, phone: signupPhone, password: signupPassword, confirmPassword: signupConfirmPassword, role: signupRole });
             if (!parsed.success) {
-                const errs: { name?: string; email?: string; password?: string } = {};
+                const errs: { name?: string; email?: string; phone?: string; password?: string; confirmPassword?: string } = {};
                 for (const issue of parsed.error.issues) {
-                    const path = issue.path.join('.') as 'name' | 'email' | 'password';
+                    const path = issue.path.join('.') as 'name' | 'email' | 'phone' | 'password' | 'confirmPassword';
                     errs[path] = issue.message;
                 }
                 setSignupFieldErrors(errs);
                 toast.error("Mohon perbaiki kesalahan pada form");
                 return false;
             }
-            await signup(parsed.data.name, parsed.data.email, parsed.data.password, parsed.data.role);
+            await signup(parsed.data.name, parsed.data.email, parsed.data.phone, parsed.data.password, parsed.data.role);
             toast.success("Registrasi berhasil");
             // Reset form on success
             setSignupName("");
             setSignupEmail("");
             setSignupPassword("");
+            setSignupConfirmPassword("");
+            setSignupPhone("");
             setSignupFieldErrors({});
             return true;
         } catch (err: unknown) {
@@ -203,6 +224,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             signupName,
             signupEmail,
             signupPassword,
+            signupConfirmPassword,
+            signupPhone,
             signupFieldErrors,
             signupLoading,
             signupRole,
@@ -210,6 +233,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setSignupName,
             setSignupEmail,
             setSignupPassword,
+            setSignupConfirmPassword,
+            setSignupPhone,
             handleSignupSubmit,
             signin,
             signup,

@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     };
 
     const [rows] = await pool.execute(
-      "SELECT id, name, email, role FROM users WHERE id = ?",
+      "SELECT id, name, email, phone, role FROM users WHERE id = ?",
       [decoded.sub]
     );
 
@@ -31,6 +31,7 @@ export async function GET(request: NextRequest) {
       id: number;
       name: string;
       email: string;
+      phone?: string;
       role: "admin" | "user" | "pemilik";
     }>;
     if (!users.length) {

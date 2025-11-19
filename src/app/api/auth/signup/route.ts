@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    const { name, email, password, role } = parsed.data;
+    const { name, email, phone, password, role } = parsed.data;
 
     // API key guard using x-api-key header
     const apiKey = request.headers.get("x-api-key");
@@ -57,8 +57,8 @@ export async function POST(request: NextRequest) {
     const password_hash = await bcrypt.hash(password, 10);
 
     const [insertResult] = await pool.execute(
-      "INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, ?)",
-      [name, email, password_hash, role]
+      "INSERT INTO users (name, email, phone, password_hash, role) VALUES (?, ?, ?, ?, ?)",
+      [name, email, phone, password_hash, role]
     );
 
     const insertedId = (insertResult as { insertId: number }).insertId;
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
 
     const res = NextResponse.json({
       success: true,
-      data: { id: insertedId, name, email, role: roleFromDb },
+      data: { id: insertedId, name, email, phone, role: roleFromDb },
     });
     res.cookies.set("token", token, {
       httpOnly: true,
